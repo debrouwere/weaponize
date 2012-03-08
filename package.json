@@ -1,0 +1,21 @@
+{
+    "name": "cdnify",
+    "author": "Stijn Debrouwere",
+    "description": "Cdnify optimizes your apps and simplifies working with public and private CDNs.",
+    "version": "0.1.0",
+    "dependencies": {
+        "express": "2.x", 
+        "tilt": "0.1.x",
+        "request": ""
+    },
+    "repository": {
+        "type": "git", 
+        "url": "git://github.com/stdbrouw/cdnify.git"
+    },
+    "licenses": [
+        {
+            "type": "MIT", 
+            "url": "http://github.com/stdbrouw/cdnify/raw/master/LICENSE"
+        }
+    ]
+}
