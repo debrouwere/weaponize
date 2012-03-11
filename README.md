@@ -1,51 +1,60 @@
-Cdnify optimizes your apps and simplifies working with public and private CDNs.
+Railgun guides your client-side app from development to production. Bundles and optimizes your assets. Separates dev and production environment. Simplifies working with public and private CDNs.
 
-## Overview
+Railgun has five basic features.
 
-Cdnify provides five basic features.
-
-* Packages up a client-side app for easy distribution through a CDN (or faster serving on your own hardware): minification, concatenation, all that good stuff.
+* Packages up a client-side app for easy distribution through a CDN or faster serving on your own hardware: minification, concatenation, all that good stuff.
 * Preprocesses template languages into HTML, CoffeeScript into JavaScript and stylesheet languages into CSS.
-* Filters out code you only need during development, flagged by you using a `data-cdnify-environment` data attribute.
+* Filters out code you only need during development and includes code you only need in production, flagged through `data-railgun-environment` data attributes.
 * Finds and replaces references to common libraries like jQuery with the equivalent from a public CDN like cdnjs.com or the Google Libraries CDN.
 * Caches and serves the latest versions popular JavaScript libraries on your development machine.
 
-Cdnify doesn't require any configuration and works with any project structure. Cdnify can work standalone, but you can also use it from Draughtsman. Draughtsman integrates with Cdnify to give you a full-blown local web server and static site builder, built from the ground up to simplify front-end engineers' workflows.
+Railgun doesn't require any configuration and works with any project structure. Railgun can work standalone, but you can also use it from [Draughtsman](https://github.com/stdbrouw/draughtsman). Draughtsman integrates with Railgun to give you a full-blown local web server and static site builder, built from the ground up to simplify front-end engineers' workflows.
 
-## Airplane mode
+It is also the engine behind a couple of other projects: 
 
-Cdnify can act as a local file server (either standalone or hooked to another server in node.js) that will make popular JavaScript libraries available locally. The first time you ask for a file (say, `/1.7.2/jquery.min.js`) Cdnify will fetch it from a public CDN, either the Google Libraries CDN or CloudFlare's cdnjs.com. But any requests from that moment on will be served from a cached version on your own computer. Speeds things up and makes sure you can do client-side development without an internet connection.
+* [Hector](https://github.com/stdbrouw/hector), a Jekyll-like static site generation framework -- ideal if you're not just optimizing an app but want to use Railgun to build a promotional site or to run your blog.
+* [Backbone-express](https://github.com/stdbrouw/backbone-express), a server for your Backbone applications that provides a node.js compatibility layer so Backbone routes and view renders work server-side too.
 
-(You can also cache any random file locally, using /?url=<bla> and optionally &ttl to specify when to invalidate the cache for unversioned files.)
+Railgun uses [Tilt.js](https://github.com/stdbrouw/tilt.js) for template and preprocessor compilation and [Envv](https://github.com/stdbrouw/envv) to provide environments as well as replace common libraries with their equivalent on a public content delivery network.
 
 ## API
 
-You can integrate Cdnify into your own apps.
+You can integrate Railgun into your own apps.
 
-1. Give Cdnify a library name or path, and it'll return CDN urls it knows of that have that library.
+1. Give Railgun a library name or path, and it'll return CDN urls it knows of that have that library (doing HEAD requests so it's always up to date, though with a nocheck parameter so you can use it if offline or if you *know* your libraries are available at cdnjs.com.)
 
 <code example>
 
-2. Give Cdnify a URL, file of string of HTML, and it'll return a cleaned-up version with all JavaScript and CSS assets nicely packaged together and optimized, references to local libraries replaced with public CDN versions, and cache busters so you can set your expire headers really far in the future. (You'll get back a hash with filenames and their contents.)
+2. Give Railgun a URL, file of string of HTML, and it'll return a cleaned-up version with all JavaScript and CSS assets nicely packaged together and optimized, references to local libraries replaced with public CDN versions, and cache busters so you can set your expire headers really far in the future. (You'll get back a hash with filenames and their contents.)
 
 <code example>
 
 ## Command-line
 
-Point the Cdnify command line interface to an HTML file or directory and it will output a nicely optimized version in a directory of your choice.
+Point the Railgun command line interface to an HTML file or directory and it will output a nicely optimized version in a directory of your choice.
 
 	# build your app (always does a clean build and empties the build dir first)
-	cdnify build
-		-o --output	# output dir
-		-s --sources	# add additional CDN sources (in order of preference)
-	# serve the local file cache
-	cdnify serve
-		-p --port
-	# clear the local file cache
-	cdnify clean
-	# serve your app: use draughtsman instead!
-	draughtsman
+	railgun build
+		-o --output	    # output dir
+		-s --sources	    # add additional CDN sources (in order of preference)
+
+	# draughtsman will respect `data-railgun-environment` and, being a dev server,
+	# strip out scripts that target the production environment; but railgun
+	# also has its own server, which (as opposed to draughtsman) is as plain to
+	# a regular file server as possible, and serves mainly to test out if there are
+	# no errors in the packaging process or in your code that targets the production
+	# environment only
+	#
+	# We want to encourage people to use draughtsman, but railgun should be able to stand
+	# on its own.
+	railgun serve
+	    -e --environment    # production by default
+	    -f --follow         # serves an endpoint that a GitHub post-commit hook
+	                        # can POST to, which prompts Railgun to fetch the latest
+	                        # commit from said repository and rebuild the app/site
+	                        # [also works on railgun build, which turns that command
+	                        # into a long-lived process]
 
 ## Issues
 
-If for whatever weird reason the Cdnify cache is corrupted, just run `cdnify clean` and you'll have a fresh, empty cache.
+If for whatever weird reason the Railgun cache is corrupted, just run `railgun clean` and you'll have a fresh, empty cache.

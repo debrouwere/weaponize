@@ -1,0 +1,7 @@
+- implement compilation and concatenation, with the help of the `Tilt.js` module
+- implement *pre*compilation for templates
+- create a separate build option that writes the concatenated files away to a directory
+  (-o --output)
+- allow building and serving to use an index file in any kind of template language we support, not just plain HTML -- the same flexibility we allow for other scripts and styles
+- implement the -r --resource-root flag to support separate hosting environments for static files (chiefly CDNs)
+- implement -p --port for server port

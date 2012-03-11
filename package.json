@@ -1,21 +1,34 @@
 {
-    "name": "cdnify",
-    "author": "Stijn Debrouwere",
-    "description": "Cdnify optimizes your apps and simplifies working with public and private CDNs.",
-    "version": "0.1.0",
-    "dependencies": {
-        "express": "2.x", 
-        "tilt": "0.1.x",
-        "request": ""
-    },
-    "repository": {
-        "type": "git", 
-        "url": "git://github.com/stdbrouw/cdnify.git"
-    },
-    "licenses": [
-        {
-            "type": "MIT", 
-            "url": "http://github.com/stdbrouw/cdnify/raw/master/LICENSE"
-        }
-    ]
+  "name": "railgun",
+  "author": "Stijn Debrouwere <stijn@stdout.be> (http://stdout.be)",
+  "description": "Railgun guides your client-side app from development to production. Bundles and optimizes your assets. Separates dev and production environment.",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/stdbrouw/railgun.git"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/stdbrouw/railgun/raw/master/LICENSE"
+    }
+  ],
+  "dependencies": {
+    "express": "2.x",
+    "mime": "",
+    "tilt": "0.1.x",
+    "envv": "",
+    "jsdom": "",
+    "uglify-js": "",
+    "async": ""
+  },
+  "devDependencies": {
+    "mocha": "",
+    "should": ""
+  },
+  "optionalDependencies": {},
+  "engines": {
+    "node": "0.6.x"
+  },
+  "main": "lib/index.js"
 }

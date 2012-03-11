@@ -1,0 +1,50 @@
+Stuff we grab from Envv
+
+data-runtime
+	to replace a compiler with its smaller runtime equivalent, or with an equivalent CDN version
+	(this is a shortcut to having two data-express-environment script or link tags with opposite
+	environments)
+data-cdn
+data-environment="development|production"
+	to only include a script in development (template compilation) or production respectively
+
+Stuff Railgun takes care of:
+
+text/:format (on a script or link tag)
+	precompile (and then concatenate) in a production environment
+
+Note that this technique can also work for CoffeeScript: you'd include the CoffeeScript compiler with data-development="true", and you'd load your CoffeeScripts with text/coffeescript. And it can also work for Less.js and Stylus and many other JavaScript-based precompilers that are available in the browser.
+
+And ideally, while we're at it, we don't just do precompilations and replace full scripts with runtimes, but we also concatenate the whole thing (taking care to only concatenate consecutive scripts or styles and nothing with an http location, because those are usually CDN scripts) and then when we write the script and link tags, add cache busters (compilation time timestamp).
+
+---
+
+An (untested) example compilation script for Jade that you'd include with data-environment="development":
+
+function basename (path) {
+    return 'todo';
+}
+
+$('script')
+    .filter(function(){ return $(this).attr('type') === 'text/jade'; })
+    .each(function(){
+        jade.templates[basename(this)] = function(context){ jade.compile($(this).html(), {locals: context}); }; 
+     });
+
+// now you can do jade.templates.mytemplate(context) both client-side and server-side
+
+---
+
+The entrypoint for our Railgun CLI doesn't have to be an HTML file, it can be anything `compiler` can process into HTML. (In the example app, include both an index.html and an index.jade to make this clear, both with the necessary inline comments to explain that they're interchangeable.)
+
+And Railgun shouldn't just compile and concatenate scripts with a src property, it should do the same for inline scripts as well.
+
+---
+
+Because some people will want to put their assets in a CDN (or served statically for other reasons), our CLI app should be able to *serve*, but also just *build* the app. The CLI should be able to accept a --resource-root flag which turns relative paths for concatenated files into fully qualified ones (works for both building and serving.) This is particularly useful if you work with a CDN, but may also be useful if you have a `static` or `media` subdomain that you use to parallelize resource loading. (The latter doesn't usually give you huge speedups for a single-page app with optimized JavaScript and CSS, but it's there if you want it.)
+
+When serving, Railgun doesn't create intermediate files, but instead keeps these in memory.
+
+---
+
+Error handling is crucial. When we can't optimize an app the way it should be optimized, when we can't find a file, when someone is not using best practices... we should spit out warnings or informative error messages that make it very easy to correct the mistake.
