@@ -10,7 +10,6 @@ exports.package = null
 exports.createServer = (entrypoint, callback) ->
     app = express.createServer()
     exports.bundle entrypoint, (errors, bundle) ->
-        console.log bundle
         app.get '*', (req, res) ->
             path = req.path.slice 1
             if bundle[path]?

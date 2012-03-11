@@ -20,7 +20,8 @@
     "envv": "",
     "jsdom": "",
     "uglify-js": "",
-    "async": ""
+    "async": "",
+    "findit": ""
   },
   "devDependencies": {
     "mocha": "",
