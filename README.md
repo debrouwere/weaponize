@@ -1,6 +1,12 @@
+# Railgun
+
 Railgun guides your client-side app from development to production. Bundles and optimizes your assets. Separates dev and production environment. Simplifies working with public and private CDNs.
 
-Railgun has five basic features.
+## Project status
+
+Railgun is highly experimental, alpha, under heavy development, however you'd like to call it. Please don't use this... yet.
+
+## Features
 
 * Packages up a client-side app for easy distribution through a CDN or faster serving on your own hardware: minification, concatenation, all that good stuff.
 * Preprocesses template languages into HTML, CoffeeScript into JavaScript and stylesheet languages into CSS.
@@ -12,7 +18,7 @@ Railgun doesn't require any configuration and works with any project structure. 
 
 It is also the engine behind a couple of other projects: 
 
-* [Hector](https://github.com/stdbrouw/hector), a Jekyll-like static site generation framework -- ideal if you're not just optimizing an app but want to use Railgun to build a promotional site or to run your blog.
+* [Hector](https://github.com/stdbrouw/hector), a nascent Jekyll-like static site generation framework -- ideal if you're not just optimizing an app but want to use Railgun to build a promotional site or to run your blog.
 * [Backbone-express](https://github.com/stdbrouw/backbone-express), a server for your Backbone applications that provides a node.js compatibility layer so Backbone routes and view renders work server-side too.
 
 Railgun uses [Tilt.js](https://github.com/stdbrouw/tilt.js) for template and preprocessor compilation and [Envv](https://github.com/stdbrouw/envv) to provide environments as well as replace common libraries with their equivalent on a public content delivery network.
