@@ -96,7 +96,7 @@ class Bundle
                 return @files.splice i, 1
 
     find: (path) ->
-        _.find @files, (file) -> file.path is path
+        _.find @files, (file) -> file.originalPath is path
 
     # (1) create an unoptimized bundle
     create: (callback) ->
@@ -216,6 +216,7 @@ class Bundle
 
     # (6) concatenate and optimize scripts and stylesheets
     optimize: (self..., callback) ->
+    
         scripts = @links.scripts
             .map (ref) =>
                 # TODO: everything should exist and have content, so 
@@ -225,8 +226,8 @@ class Bundle
         
         @push @root + '/application.min.js', 
             compilerType: 'noop'
-            content: utils.code.compress 
-            origin: scripts
+            content: utils.code.compress scripts
+            origin: @links.scripts
         @remove ('/' + script) for script in @links.scripts
         callback null, this
 

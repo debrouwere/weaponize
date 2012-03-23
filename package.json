@@ -24,12 +24,15 @@
     "findit": ""
   },
   "devDependencies": {
-    "mocha": "",
+    "mocha": "0.14.x",
     "should": ""
   },
   "optionalDependencies": {},
   "engines": {
     "node": "0.6.x"
   },
-  "main": "lib/index.js"
+  "main": "lib/index.js",
+  "scripts": {
+    "install": "make"
+  }
 }

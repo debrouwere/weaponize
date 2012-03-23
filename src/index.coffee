@@ -6,16 +6,29 @@ exports.bundle = require('./bundle').bundle
 # `package` writes the bundle away to a directory
 exports.package = null
 
-# `createServer` keeps the bundle in memory and serves it
+# Keeps the bundle in middleware and serves it
+# This is a Connect middleware
+exports.static = (bundle) ->
+    files = {}
+
+    for file in bundle.files
+        files[file.path] = 
+            contentType: mime.lookup file.path
+            content: file.content
+            absolutePath: file.absolutePath
+
+    (req, res, next) ->
+        file = files[req.url]
+        return next() unless file?
+    
+        res.contentType file.contentType
+        if file.content?
+            res.send file.content
+        else
+            res.sendfile file.absolutePath
+
 exports.createServer = (entrypoint, callback) ->
     app = express.createServer()
     exports.bundle entrypoint, (errors, bundle) ->
-        app.get '*', (req, res) ->
-            path = req.path.slice 1
-            if bundle[path]?
-                res.contentType mime.lookup path
-                res.send bundle[path]
-            else
-                res.send 404
-
+        app.use exports.static bundle
         callback app
