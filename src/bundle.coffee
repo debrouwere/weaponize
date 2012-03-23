@@ -75,6 +75,11 @@ class Bundle
         @relativeEntrypoint = @entrypoint.slice @root.length
         @files = []
 
+    shouldInclude: (file) ->
+        name = fs.path.basename file
+        hidden = name.indexOf('.') is 0
+        not hidden
+
     # TODO: merge options against a default
     push: (path, options) ->
         # the bundle works with relative paths
@@ -102,7 +107,8 @@ class Bundle
     create: (callback) ->
         finder = findit.find @root
         finder.on 'file', (file) =>
-            @push file
+            if @shouldInclude file
+                @push file
         finder.on 'end', =>
             callback null, this
 
