@@ -219,13 +219,28 @@ class Bundle
         
         callback null, this
 
+    loadLinks: (self..., callback) ->
+        links = _.compact @links.scripts.concat @links.styles
+
+        load = (link, done) =>
+            link = @find '/' + link
+            #  don't try to reload links (especially since their `content`
+            # may already contain a precompiled version rather than raw
+            # file contents)
+            return done() if link.content
+            
+            fs.readFile link.absolutePath, 'utf8', (errors, data) ->
+                link.content = data
+                done()
+
+        async.forEach links, load, (errors) =>
+            callback errors, this
+
     # (6) concatenate and optimize scripts and stylesheets
     optimize: (self..., callback) ->
         scripts = @links.scripts
             .map (ref) =>
-                # TODO: everything should exist and have content, so 
-                # the existential operator needs to go
-                (@find '/' + ref)?.content
+                (@find '/' + ref).content
             .join ';\n'
         
         @push @root + '/application.min.js', 
@@ -247,9 +262,11 @@ class Bundle
                 el = $ @
                 # we can't remove all scripts -- absolute references to
                 # external scripts and styles should be kept intact
-                if el.attr('src').indexOf('/') isnt 0
-                    el.remove()
-                if el.hasClass 'jsdom'
+                relative = el.attr('src').indexOf('/') isnt 0
+                internal = el.attr('src').indexOf('http') isnt 0
+                util = el.hasClass('jsdom')
+                
+                if util or relative or internal
                     el.remove()
                 
             script = window.document.createElement('script')
@@ -271,6 +288,7 @@ exports.bundle = (entrypoint, callback) ->
         bundle.setProductionEnvironment
         bundle.findLinks
         bundle.aggregateLinks
+        bundle.loadLinks
         bundle.optimize
         bundle.rewriteHtml
         ]
