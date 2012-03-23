@@ -101,7 +101,7 @@ class Bundle
                 return @files.splice i, 1
 
     find: (path) ->
-        _.find @files, (file) -> file.originalPath is path
+        _.find @files, (file) -> path in [file.path, file.originalPath]
 
     # (1) create an unoptimized bundle
     create: (callback) ->
@@ -202,9 +202,8 @@ class Bundle
 
     # (5) try to merge and order links from all the different files
     # in a logical way
-    orderLinks: (self..., callback) ->
-        # TODO: properly implement this (or drop support for smart ordering), 
-        # and clean it up a little
+    aggregateLinks: (self..., callback) ->
+        # TODO: do we want to support smart (re)ordering or not?
         links = _(@files)
             .chain()
             .pluck('links')
@@ -222,7 +221,6 @@ class Bundle
 
     # (6) concatenate and optimize scripts and stylesheets
     optimize: (self..., callback) ->
-    
         scripts = @links.scripts
             .map (ref) =>
                 # TODO: everything should exist and have content, so 
@@ -235,23 +233,35 @@ class Bundle
             content: utils.code.compress scripts
             origin: @links.scripts
         @remove ('/' + script) for script in @links.scripts
+        
         callback null, this
 
     # (7) rewrite HTML files to point to our optimized scripts and styles
     rewriteHtml: (self..., callback) ->
-        ###
-        # TODO: we can't just remove all scripts -- absolute references to
-        # external scripts and styles should be kept intact
-        $('script').remove()
-        script = window.document.createElement('script')
-        script.type = 'text/javascript'
-        script.src = 'application.min.js'
-        window.document.getElementsByTagName('head')[0].appendChild script
-        ###
-        callback null, this        
+        entrypoint = @find @relativeEntrypoint
+    
+        utils.html.parse entrypoint.content, (errors, window) =>
+            $ = window.$
+        
+            $('script').each ->
+                el = $ @
+                # we can't remove all scripts -- absolute references to
+                # external scripts and styles should be kept intact
+                if el.attr('src').indexOf('/') isnt 0
+                    el.remove()
+                if el.hasClass 'jsdom'
+                    el.remove()
+                
+            script = window.document.createElement('script')
+            script.type = 'text/javascript'
+            script.src = 'application.min.js'
+            window.document.getElementsByTagName('head')[0].appendChild script
+
+            entrypoint.content = window.document.outerHTML
+            
+            callback null, this        
 
     report: ->
-    
 
 exports.bundle = (entrypoint, callback) ->
     bundle = new Bundle entrypoint
@@ -260,7 +270,7 @@ exports.bundle = (entrypoint, callback) ->
         bundle.preprocess
         bundle.setProductionEnvironment
         bundle.findLinks
-        bundle.orderLinks
+        bundle.aggregateLinks
         bundle.optimize
         bundle.rewriteHtml
         ]
