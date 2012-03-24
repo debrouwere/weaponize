@@ -257,22 +257,30 @@ class Bundle
     
         utils.html.parse entrypoint.content, (errors, window) =>
             $ = window.$
-        
+
+            links = @optimizedLinks = 
+                scripts: []
+                links: []
+
             $('script').each ->
                 el = $ @
+                src = el.attr('src')
                 # we can't remove all scripts -- absolute references to
                 # external scripts and styles should be kept intact
-                relative = el.attr('src').indexOf('/') isnt 0
-                internal = el.attr('src').indexOf('http') isnt 0
+                relative = src.indexOf('/') isnt 0
+                internal = src.indexOf('http') isnt 0
                 util = el.hasClass('jsdom')
                 
                 if util or relative or internal
                     el.remove()
+                else
+                    links.scripts.push src    
                 
             script = window.document.createElement('script')
             script.type = 'text/javascript'
             script.src = 'application.min.js'
             window.document.getElementsByTagName('head')[0].appendChild script
+            links.scripts.push script.src
 
             entrypoint.content = window.document.outerHTML
             
