@@ -34,6 +34,7 @@ findit = require 'findit'
 tilt = require 'tilt'
 mime = require 'mime'
 utils = require './utils'
+envv = require 'envv'
 
 change_extension = (file, mimetype) ->
     extlen = fs.path.extname(file).length - 1
@@ -70,7 +71,7 @@ get_styles = (window, root) ->
         .get()
 
 class Bundle
-    constructor: (@entrypoint) ->
+    constructor: (@entrypoint, @environment) ->
         @root = fs.path.dirname @entrypoint
         @relativeEntrypoint = @entrypoint.slice @root.length
         @files = []
@@ -180,8 +181,19 @@ class Bundle
                 callback null, this
 
     # (3) run each html file through envv at this point to get rid of dev-only code
-    setProductionEnvironment: (self..., callback) ->
-        callback null, this
+    setEnvironment: (self..., callback) ->
+        environment = @environment
+    
+        htmlFiles = @files.filter (file) ->
+            file.path.slice(-4) is 'html'
+
+        applyEnvironment = (file, done) ->
+            envv.transform file.content, environment, (errors, html) ->
+                file.content = html
+                done()
+    
+        async.forEach htmlFiles, applyEnvironment, (errors) =>
+            callback null, this
 
     findLinksInFile: (bundlefile, callback) ->
         return callback() unless (fs.path.extname bundlefile.path) is '.html'
@@ -197,7 +209,7 @@ class Bundle
     findLinks: (self..., callback) ->
         findLinksInFile = _.bind @findLinksInFile, this
     
-        async.forEach @files, findLinksInFile, (errors) ->
+        async.forEach @files, findLinksInFile, (errors) =>
             callback null, this
 
     # (5) try to merge and order links from all the different files
@@ -288,12 +300,15 @@ class Bundle
 
     report: ->
 
-exports.bundle = (entrypoint, callback) ->
-    bundle = new Bundle entrypoint
+exports.bundle = (args..., callback) ->
+    [entrypoint, environment] = args
+    environment ?= 'production'
+
+    bundle = new Bundle entrypoint, environment
     tasks = [
         bundle.create
         bundle.preprocess
-        bundle.setProductionEnvironment
+        bundle.setEnvironment
         bundle.findLinks
         bundle.aggregateLinks
         bundle.loadLinks

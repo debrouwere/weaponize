@@ -22,8 +22,7 @@ exports.package = (bundle, destination, callback) ->
         
     async.forEach bundle.files, writeFile, callback
 
-# Keeps the bundle in middleware and serves it
-# This is a Connect middleware
+# Keeps the bundle in middleware and serves it (this is a Connect middleware)
 exports.static = (bundle) ->
     files = {}
 
