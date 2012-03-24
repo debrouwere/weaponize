@@ -1,10 +1,26 @@
+fs = require 'fs'
+fs.path = require 'path'
 express = require 'express'
 mime = require 'mime'
+async = require 'async'
+wrench = require 'wrench'
 
 exports.bundle = require('./bundle').bundle
 
 # `package` writes the bundle away to a directory
-exports.package = null
+exports.package = (bundle, destination, callback) ->
+    writeFile = (file, done) ->
+        path = fs.path.join destination, file.path
+        dir = fs.path.dirname path
+        wrench.mkdirSyncRecursive dir
+        
+        if file.content
+            fs.writeFile path, file.content, 'utf8', done
+        else
+            fs.readFile file.absolutePath, (errors, data) ->
+                fs.writeFile path, data, done
+        
+    async.forEach bundle.files, writeFile, callback
 
 # Keeps the bundle in middleware and serves it
 # This is a Connect middleware

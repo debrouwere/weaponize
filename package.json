@@ -16,17 +16,18 @@
   "dependencies": {
     "commander": "0.5.x",
     "express": "2.x",
-    "mime": "",
+    "mime": "1.x",
     "tilt": "0.1.x",
-    "envv": "",
-    "jsdom": "",
-    "uglify-js": "",
-    "async": "",
-    "findit": ""
+    "envv": "0.x",
+    "jsdom": "0.2.x",
+    "uglify-js": "1.x",
+    "async": "0.1.x",
+    "findit": "0.1.x",
+    "wrench": "1.x"
   },
   "devDependencies": {
     "mocha": "0.14.x",
-    "should": ""
+    "should": "0.6.x"
   },
   "optionalDependencies": {},
   "engines": {
