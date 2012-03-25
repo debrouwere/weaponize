@@ -45,7 +45,7 @@ absolutize = (path, against) ->
     root = fs.path.dirname against
     fs.path.join root, path
 
-get_scripts = (window, root) ->
+getScripts = (window, root) ->
     $ = window.$
     $('script')
         .map ->
@@ -57,14 +57,14 @@ get_scripts = (window, root) ->
         .filter (script) ->
             script.src isnt utils.jQueryPath
 
-get_styles = (window, root) ->
+getStyles = (window, root) ->
     $ = window.$
     $('link')
         .filter ->
             rel = ($ @).attr 'rel'
             rel is 'stylesheet'
         .map ->
-            src = ($ @).attr 'src'
+            src = ($ @).attr 'href'
             path = absolutize src, root
             type = ($ @).attr 'type'
             {src, type}
@@ -123,7 +123,7 @@ class Bundle
     updateMetadata: (bundlefile, callback) ->
         utils.html.parse bundlefile.content, (errors, window) =>
             $ = window.$
-            scripts = get_scripts window, @root
+            scripts = getScripts window, @root
             scripts.forEach (script) =>
                 if script.type and tilt.getHandlerByMime script.type
                     s = @find '/' + script.src
@@ -201,8 +201,8 @@ class Bundle
         utils.html.parse bundlefile.content, (errors, window) =>
             $ = window.$
             bundlefile.links =
-                scripts: _(get_scripts window, @root).pluck 'src'
-                styles: _(get_styles window, @root).pluck 'src'
+                scripts: _(getScripts window, @root).pluck 'src'
+                styles: _(getStyles window, @root).pluck 'src'
             callback()
 
     # (4) find all script and link tags and annotate the bundle
@@ -249,17 +249,33 @@ class Bundle
             callback errors, this
 
     # (6) concatenate and optimize scripts and stylesheets
-    optimize: (self..., callback) ->
-        scripts = @links.scripts
-            .map (ref) =>
-                (@find '/' + ref).content
-            .join ';\n'
+    optimizeStyles: (self..., callback) ->
+        if @links.styles.length
+            styles = @links.styles
+                .map (ref) =>
+                    (@find '/' + ref).content
+                .join '\n'
+
+            @push @root + '/application.min.css', 
+                compilerType: 'noop'
+                content: utils.styles.compress styles
+                origin: @links.styles
+            @remove ('/' + style) for style in @links.styles
         
-        @push @root + '/application.min.js', 
-            compilerType: 'noop'
-            content: utils.code.compress scripts
-            origin: @links.scripts
-        @remove ('/' + script) for script in @links.scripts
+        callback null, this
+    
+    optimizeScripts: (self..., callback) ->
+        if @links.scripts.length
+            scripts = @links.scripts
+                .map (ref) =>
+                    (@find '/' + ref).content
+                .join ';\n'
+            
+            @push @root + '/application.min.js', 
+                compilerType: 'noop'
+                content: utils.code.compress scripts
+                origin: @links.scripts
+            @remove ('/' + script) for script in @links.scripts
         
         callback null, this
 
@@ -272,11 +288,11 @@ class Bundle
 
             links = @optimizedLinks = 
                 scripts: []
-                links: []
+                styles: []
 
-            $('script').each ->
+            $("script").add("link[rel='stylesheet']").each ->
                 el = $ @
-                src = el.attr('src')
+                src = el.attr('src') or el.attr('href')
                 # we can't remove all scripts -- absolute references to
                 # external scripts and styles should be kept intact
                 relative = src.indexOf('/') isnt 0
@@ -286,13 +302,26 @@ class Bundle
                 if util or relative or internal
                     el.remove()
                 else
-                    links.scripts.push src    
-                
-            script = window.document.createElement('script')
-            script.type = 'text/javascript'
-            script.src = 'application.min.js'
-            window.document.getElementsByTagName('head')[0].appendChild script
-            links.scripts.push script.src
+                    if el.name is 'script'
+                        links.scripts.push src
+                    else
+                        links.styles.push src
+
+            head = window.document.getElementsByTagName('head')[0]
+
+            if @links.scripts.length
+                script = window.document.createElement('script')
+                script.type = 'text/javascript'
+                script.src = 'application.min.js'
+                head.appendChild script
+                links.scripts.push script.src
+
+            if @links.styles.length
+                link = window.document.createElement('link')
+                link.rel = 'stylesheet'
+                link.href = 'application.min.css'
+                head.appendChild link
+                links.styles.push link.href
 
             entrypoint.content = window.document.outerHTML
             
@@ -312,7 +341,8 @@ exports.bundle = (args..., callback) ->
         bundle.findLinks
         bundle.aggregateLinks
         bundle.loadLinks
-        bundle.optimize
+        bundle.optimizeStyles
+        bundle.optimizeScripts
         bundle.rewriteHtml
         ]
     tasks = tasks.map (task) -> _.bind task, bundle

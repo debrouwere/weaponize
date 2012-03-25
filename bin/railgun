@@ -19,6 +19,8 @@ program
 program
     .option '-r, --resource-root [root]',
         'A URL segment to be used as a prefix for all static file references, useful when using a separate hosting environment for static files (chiefly CDNs) in production'
+    .option '-s, --single-page',
+        'inline JavaScript and CSS into the index, reducing HTTP requests for single-page apps'
     .option '-i --ignore',
         'ignore, using the .gitignore format, files that should not be included in the build'
     .option '-n, --noop',

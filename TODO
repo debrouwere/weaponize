@@ -1,2 +1,7 @@
+- instead of using an application.min.js and application.min.css, 
+  allow the option to inline everything on the page (not a good idea
+  for sites, a very good idea for single-page apps)
 - use the connect.compress middleware (gzip/deflate) for our server
 - update to express 3.0 once it's there
+- use pngcrush when available and when writing to a file-based bundle
+  (or is that an arbitrary distinction?)

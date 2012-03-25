@@ -1,5 +1,6 @@
 jsdom = require 'jsdom'
 {parser, uglify} = require 'uglify-js'
+csso = require 'csso'
 fs = require 'fs'
 fs.path = require 'path'
 
@@ -23,3 +24,10 @@ exports.code =
             #{code}
         })(this);
         """
+
+exports.styles =
+    compress: (code) ->
+        code = csso.justDoIt code
+        # don't know why csso creates this global, but it does in 1.2.13
+        delete global['v']
+        code

@@ -18,6 +18,4 @@ it 'can write that bundle to an output dir', (done) ->
 
     railgun.bundle example, (errors, bundle) ->
         railgun.package bundle, destination, (errors) ->
-            console.log errors
-            console.log 'done'
             done()
