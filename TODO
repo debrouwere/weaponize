@@ -1,7 +1,21 @@
-- instead of using an application.min.js and application.min.css, 
-  allow the option to inline everything on the page (not a good idea
-  for sites, a very good idea for single-page apps)
-- use the connect.compress middleware (gzip/deflate) for our server
-- update to express 3.0 once it's there
+** instead of using an application.min.js and application.min.css, allow the option to inline everything on the page 
+
+not a good idea for sites, a very good idea for single-page apps
+
+** use the connect.compress middleware (gzip/deflate) for our server
+
+** optional gzipping of html, css and JavaScript
+
+You choose whether these files retain their original extensions or get .gz appended, and you choose whether to keep the uncompressed build or to do away with uncompressed files
+
+For S3, you'll want to retain original extensions and throw away uncompressed variants (which does mean you lose support for very old browsers), and you need to pass on the `Content-Encoding: gzip` header to clients.
+
+For NGINX, you'll want to add `gzip_static on;` to your config, retain originals and append .gz.
+
+(Note that decompression of heavily gzipped files takes about the same amount of time as it does for lightly gzipped files or even less, so it makes sense to always use gzip 9 when compressing on build.)
+
+- update to express 3.0 once it's on npm
+
 - use pngcrush when available and when writing to a file-based bundle
-  (or is that an arbitrary distinction?)
+
+(Or should it work for mem-based bundles too? JavaScript its mediocre support for binary could make this tough.)

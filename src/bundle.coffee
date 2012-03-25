@@ -71,7 +71,7 @@ getStyles = (window, root) ->
         .get()
 
 class Bundle
-    constructor: (@entrypoint, @environment) ->
+    constructor: (@entrypoint, @environment, @inline = no) ->
         @root = fs.path.dirname @entrypoint
         @relativeEntrypoint = @entrypoint.slice @root.length
         @files = []
@@ -327,13 +327,34 @@ class Bundle
             
             callback null, this        
 
+    inline: (self..., callback) ->
+        return callback(null, this) unless @inline
+
+        # - loop through every HTML file (which hopefully is just a single file
+        # as this only makes sense for single-page apps so we should @warn if not)
+        # - inline application.min.js and application.min.css (if they exist)
+        # - remove those files from the bundle, since they're now inlined everywhere
+
     report: ->
+        ###
+        WARNINGS
+        - trying to inline but there's more than one HTML file
+        - different pages include different styles or scripts, 
+        which may upset the optimization process
+
+        STATS (#, # original, # change, % change)
+        - amount of requests rendering the front page will take (`index.html`)
+        - bundle file size
+        - gzipped bundle file size
+        - bundle files
+        - scripts replaced by CDN versions (+ CDN provider for each)
+        ###
 
 exports.bundle = (args..., callback) ->
-    [entrypoint, environment] = args
+    [entrypoint, environment, inline] = args
     environment ?= 'production'
 
-    bundle = new Bundle entrypoint, environment
+    bundle = new Bundle entrypoint, environment, inline
     tasks = [
         bundle.create
         bundle.preprocess
@@ -344,6 +365,7 @@ exports.bundle = (args..., callback) ->
         bundle.optimizeStyles
         bundle.optimizeScripts
         bundle.rewriteHtml
+        bundle.inline
         ]
     tasks = tasks.map (task) -> _.bind task, bundle
     
