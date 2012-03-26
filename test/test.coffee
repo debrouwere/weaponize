@@ -19,3 +19,14 @@ it 'can write that bundle to an output dir', (done) ->
     railgun.bundle example, (errors, bundle) ->
         railgun.package bundle, destination, (errors) ->
             done()
+
+it 'can compress a bundle', (done) ->
+    if fs.path.existsSync destination
+        wrench.rmdirSyncRecursive destination
+
+    # TODO: this really would make much more sense as an options object, 
+    # rather than these bare yesses and no's
+    railgun.bundle example, 'production', no, yes, (errors, bundle) ->
+        railgun.package bundle, destination, (errors) ->
+            # TODO: properly test compression by unzipping and checking content
+            done()

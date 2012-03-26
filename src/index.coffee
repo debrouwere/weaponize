@@ -14,7 +14,9 @@ exports.package = (bundle, destination, callback) ->
         dir = fs.path.dirname path
         wrench.mkdirSyncRecursive dir
         
-        if file.content
+        if file.gzippedContent
+            fs.writeFile (path + '.gz'), file.gzippedContent, done
+        else if file.content
             fs.writeFile path, file.content, 'utf8', done
         else
             fs.readFile file.absolutePath, (errors, data) ->

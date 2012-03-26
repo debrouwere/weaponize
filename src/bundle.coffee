@@ -28,6 +28,7 @@ Serving or writing away this bundle is not a part of this code, but is taken car
 
 fs = require 'fs'
 fs.path = require 'path'
+zlib = require 'zlib'
 _ = require 'underscore'
 async = require 'async'
 findit = require 'findit'
@@ -71,7 +72,7 @@ getStyles = (window, root) ->
         .get()
 
 class Bundle
-    constructor: (@entrypoint, @environment, @inline = no) ->
+    constructor: (@entrypoint, @environment, @inline = no, @compress = no) ->
         @root = fs.path.dirname @entrypoint
         @relativeEntrypoint = @entrypoint.slice @root.length
         @files = []
@@ -327,6 +328,7 @@ class Bundle
             
             callback null, this        
 
+    # optional
     inline: (self..., callback) ->
         return callback(null, this) unless @inline
 
@@ -334,6 +336,21 @@ class Bundle
         # as this only makes sense for single-page apps so we should @warn if not)
         # - inline application.min.js and application.min.css (if they exist)
         # - remove those files from the bundle, since they're now inlined everywhere
+
+    # optional
+    gzip: (self..., callback) ->
+        return callback(null, this) unless @compress
+
+        gzip = (file, done) ->
+            return done() unless fs.path.extname(file.path) in ['.html', '.js', '.css']
+            # TODO: considering some files have .content preloaded and some don't, 
+            # maybe abstract file.content into a lazy loader / getter-setter?
+            zlib.gzip (new Buffer file.content), (errors, buffer) ->
+                file.gzippedContent = buffer
+                done()
+
+        async.forEach @files, gzip, (errors) =>
+            callback null, this
 
     report: ->
         ###
@@ -351,10 +368,10 @@ class Bundle
         ###
 
 exports.bundle = (args..., callback) ->
-    [entrypoint, environment, inline] = args
+    [entrypoint, environment, inline, compress] = args
     environment ?= 'production'
 
-    bundle = new Bundle entrypoint, environment, inline
+    bundle = new Bundle entrypoint, environment, inline, compress
     tasks = [
         bundle.create
         bundle.preprocess
@@ -365,7 +382,8 @@ exports.bundle = (args..., callback) ->
         bundle.optimizeStyles
         bundle.optimizeScripts
         bundle.rewriteHtml
-        bundle.inline
+        #bundle.inline
+        bundle.gzip
         ]
     tasks = tasks.map (task) -> _.bind task, bundle
     

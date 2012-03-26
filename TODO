@@ -18,4 +18,4 @@ For NGINX, you'll want to add `gzip_static on;` to your config, retain originals
 
 - use pngcrush when available and when writing to a file-based bundle
 
-(Or should it work for mem-based bundles too? JavaScript its mediocre support for binary could make this tough.)
+(Node.js, through Buffers, has good support for binary data, so we could support this for mem-based bundles too. The only caveat would be that if we start loading every file in a bundle into memory, that could lead to trouble for websites that have lots of binary data -- not just large websites, but even small websites with lots of images. So perhaps, if people want this sort of functionality for a mem-based bundle, they could write the bundle to a temporary location and then serve it with express.static)
