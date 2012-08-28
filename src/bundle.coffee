@@ -34,6 +34,7 @@ async = require 'async'
 findit = require 'findit'
 tilt = require 'tilt'
 mime = require 'mime'
+url = require 'url'
 utils = require './utils'
 envv = require 'envv'
 
@@ -41,16 +42,34 @@ change_extension = (file, mimetype) ->
     extlen = fs.path.extname(file).length - 1
     file.slice(0, -extlen) + mime.extension mimetype
 
-absolutize = (path, against) ->
-    return path if path.indexOf('/') is 0
-    root = fs.path.dirname against
-    fs.path.join root, path
+absolutize = (path, base) ->
+    absolute = path[0] is '/'
+    http = path.slice(0,4) is 'http'
+    
+    if absolute or http
+        path
+    else
+        root = fs.path.dirname base
+        fs.path.join root, path
+
+# TODO: be smarter about cutting out search queries
+# this makes sense for local files (because you're grabbing them as files!)
+# but we shouldn't do this for HTTP resources that may return different
+# representations depending on a search query
+# Also: even locally, we should at least return a warning / notice
+# when we've stripped out a querystring
+normalize = (src) ->
+    path = url.parse src
+    path.href.replace path.search, ''    
 
 getScripts = (window, root) ->
     $ = window.$
     $('script')
         .map ->
             src = ($ @).attr 'src'
+            # strip out querystring, if any, and turn
+            # into an absolute path
+            src = normalize src
             path = absolutize src, root
             type = ($ @).attr 'type'
             {src, type}
@@ -66,18 +85,21 @@ getStyles = (window, root) ->
             rel is 'stylesheet'
         .map ->
             src = ($ @).attr 'href'
+            src = normalize src
             path = absolutize src, root
             type = ($ @).attr 'type'
             {src, type}
         .get()
 
-class Bundle
-    constructor: (@entrypoint, @environment, @inline = no, @compress = no) ->
+class exports.Bundle
+    constructor: (@entrypoint, @environment, @inline = no, @compress = no, @exclude = []) ->
         @root = fs.path.dirname @entrypoint
         @relativeEntrypoint = @entrypoint.slice @root.length
         @files = []
 
     shouldInclude: (file) ->
+        # TODO: exclude everything starting with @exclude
+        # _.any @exclude, (exclude) -> (file.indexOf exclude) is 0
         name = fs.path.basename file
         hidden = name.indexOf('.') is 0
         not hidden
@@ -129,13 +151,14 @@ class Bundle
                 if script.type and tilt.getHandlerByMime script.type
                     s = @find '/' + script.src
                     s.compilerType = 'precompiler'
-                
+
             callback()
 
     preprocessFile: (bundlefile, callback) ->
         # callback null, this if bundlefile.operations > 0
         file = new tilt.File path: bundlefile.absolutePath
         handler = tilt.findHandler file
+
         if handler?
             file.load =>
                 handler[bundlefile.compilerType] file, {}, (output) =>
@@ -233,10 +256,15 @@ class Bundle
         callback null, this
 
     loadLinks: (self..., callback) ->
-        links = _.compact @links.scripts.concat @links.styles
+        # _.compact 
+        links = @links.scripts.concat @links.styles
 
         load = (link, done) =>
+            return done() if link.slice(0,4) is 'http'
+                
             link = @find '/' + link
+            return done(new Error "File not found: #{link}") unless link?
+
             #  don't try to reload links (especially since their `content`
             # may already contain a precompiled version rather than raw
             # file contents)
@@ -252,31 +280,49 @@ class Bundle
     # (6) concatenate and optimize scripts and stylesheets
     optimizeStyles: (self..., callback) ->
         if @links.styles.length
-            styles = @links.styles
+            optimizableStyles = @links.styles
+                .filter (ref) ->
+                    ref.slice(0,4) isnt 'http'
+
+            styles = optimizableStyles
                 .map (ref) =>
-                    (@find '/' + ref).content
+                    file = (@find '/' + ref)
+                    if file?
+                        return file.content
+                    else
+                        return callback new Error "Optimization failed. Could not load file: #{ref}"
+                    file.content
                 .join '\n'
 
             @push @root + '/application.min.css', 
                 compilerType: 'noop'
                 content: utils.styles.compress styles
                 origin: @links.styles
-            @remove ('/' + style) for style in @links.styles
+            @remove ('/' + style) for style in optimizableStyles
         
         callback null, this
     
     optimizeScripts: (self..., callback) ->
         if @links.scripts.length
-            scripts = @links.scripts
+            optimizableScripts = @links.scripts
+                .filter (ref) ->
+                    ref.slice(0,4) isnt 'http'
+
+            scripts = optimizableScripts
                 .map (ref) =>
-                    (@find '/' + ref).content
+                    file = (@find '/' + ref)
+                    if file?
+                        return file.content
+                    else
+                        return callback new Error "Optimization failed. Could not load file: #{ref}"
+                    file.content
                 .join ';\n'
             
             @push @root + '/application.min.js', 
                 compilerType: 'noop'
                 content: utils.code.compress scripts
                 origin: @links.scripts
-            @remove ('/' + script) for script in @links.scripts
+            @remove ('/' + script) for script in optimizableScripts
         
         callback null, this
 
@@ -291,8 +337,11 @@ class Bundle
                 scripts: []
                 styles: []
 
-            $("script").add("link[rel='stylesheet']").each ->
+            insertBefore = {}
+            resources = $("script").add("link[rel='stylesheet']")
+            resources.each (i) ->
                 el = $ @
+                type = el.get(0).nodeName.toLowerCase()
                 src = el.attr('src') or el.attr('href')
                 # we can't remove all scripts -- absolute references to
                 # external scripts and styles should be kept intact
@@ -300,10 +349,19 @@ class Bundle
                 internal = src.indexOf('http') isnt 0
                 util = el.hasClass('jsdom')
                 
-                if util or relative or internal
+                if util or (relative and internal)
                     el.remove()
+                    # guarantee insertion of optimizable JavaScript and CSS
+                    # *before* the last unoptimizable script or link respectively
+                    # (this isn't perfect)
+                    next = resources.eq(i+1)
+                    if next.length
+                        insertBefore[type] = next
                 else
-                    if el.name is 'script'
+                    # BUG: `push` can break scripts because it enters them out-of-order
+                    # instead we need to find the first or last script/stylesheet we're
+                    # replacing and enter it at that position.
+                    if type is 'script'
                         links.scripts.push src
                     else
                         links.styles.push src
@@ -314,14 +372,22 @@ class Bundle
                 script = window.document.createElement('script')
                 script.type = 'text/javascript'
                 script.src = 'application.min.js'
-                head.appendChild script
+                if insertBefore.script
+                    head.insertBefore script, insertBefore.script.get(0)
+                else
+                    head.appendChild script
+                # log
                 links.scripts.push script.src
 
             if @links.styles.length
                 link = window.document.createElement('link')
                 link.rel = 'stylesheet'
                 link.href = 'application.min.css'
-                head.appendChild link
+                if insertBefore.link
+                    head.insertBefore link, insertBefore.link.get(0)
+                else
+                    head.appendChild link
+                # log
                 links.styles.push link.href
 
             entrypoint.content = window.document.outerHTML
@@ -352,12 +418,20 @@ class Bundle
         async.forEach @files, gzip, (errors) =>
             callback null, this
 
-    report: ->
+    report: (self..., callback) ->
         ###
         WARNINGS
         - trying to inline but there's more than one HTML file
         - different pages include different styles or scripts, 
         which may upset the optimization process
+        - we've cut away querystrings from local files that have
+        been concatenated
+        - couldn't find a referenced file (we don't die because 
+        another non-railgun build step could conceivably add in more files)
+
+        DIE
+        - couldn't compile something
+        - out-of-order Javascript insertion
 
         STATS (#, # original, # change, % change)
         - amount of requests rendering the front page will take (`index.html`)
@@ -366,14 +440,10 @@ class Bundle
         - bundle files
         - scripts replaced by CDN versions (+ CDN provider for each)
         ###
+        callback null, this
 
-exports.bundle = (args..., callback) ->
-    [entrypoint, environment, inline, compress] = args
-    environment ?= 'production'
-
-    bundle = new Bundle entrypoint, environment, inline, compress
+exports.optimize = (bundle, callback) ->
     tasks = [
-        bundle.create
         bundle.preprocess
         bundle.setEnvironment
         bundle.findLinks
@@ -383,8 +453,17 @@ exports.bundle = (args..., callback) ->
         bundle.optimizeScripts
         bundle.rewriteHtml
         #bundle.inline
-        bundle.gzip
+        #bundle.gzip
+        #bundle.report
         ]
     tasks = tasks.map (task) -> _.bind task, bundle
     
     async.waterfall tasks, callback
+
+exports.bundle = (args..., callback) ->
+    [entrypoint, environment, inline, compress] = args
+    environment ?= 'production'
+
+    bundle = new exports.Bundle entrypoint, environment, inline, compress
+    bundle.create ->
+        exports.optimize bundle, callback

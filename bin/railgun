@@ -1,9 +1,16 @@
 #!/usr/bin/env coffee
 
+fs = require 'fs'
+fs.path = require 'path'
+railgun = require '../src/index'
 program = require 'commander'
 
 program
     .usage '[options] <entrypoint>'
+
+# espy-related options
+program
+    .option '-d, --data [directory]', 'absolute or relative directory where there\'s data we need to pass as context to templates (will not pass any context if not specified)'
 
 # envv-related options
 program    
@@ -13,7 +20,6 @@ program
         'the namespace prefix you use on environment data attributes, if any'
     .option '-h, --hint [pairs]',
         'provide hints to the CDN probe about where to find obscure or badly named libraries', ''
-    .parse process.argv
 
 # railgun-related options
 program
@@ -29,3 +35,23 @@ program
         'Where to write your bundled and optimized application (if you want output to files)'        
     .option '-p, --port [number]',
         'The port on which Backbone-Express should serve your application (if you want it to serve)'
+
+# process options
+program.parse process.argv
+
+resolvePath = (path) ->
+    if path[0] is '/'
+        path
+    else
+        fs.path.join process.cwd(), path
+
+if program.args[0] is 'build'
+    src = resolvePath program.args[1]
+    dest = resolvePath program.output
+
+    console.log "#{src} => #{dest}"
+
+    railgun.bundle src, 'production', no, yes, (errors, bundle) ->
+        railgun.package bundle, dest, (errors) ->
+            console.log errors
+            console.log "Finished #{program.environment} build. Location: #{dest}"

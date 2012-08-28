@@ -4,8 +4,10 @@ express = require 'express'
 mime = require 'mime'
 async = require 'async'
 wrench = require 'wrench'
+_ = require 'underscore'
 
-exports.bundle = require('./bundle').bundle
+
+_.extend exports, require './bundle'
 
 # `package` writes the bundle away to a directory
 exports.package = (bundle, destination, callback) ->
@@ -14,6 +16,7 @@ exports.package = (bundle, destination, callback) ->
         dir = fs.path.dirname path
         wrench.mkdirSyncRecursive dir
         
+        # TODO: optionally allow people to keep both .gz and the regular files (useful for NGINX)
         if file.gzippedContent
             fs.writeFile (path + '.gz'), file.gzippedContent, done
         else if file.content
