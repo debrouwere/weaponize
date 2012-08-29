@@ -2,7 +2,7 @@
   "name": "railgun",
   "author": "Stijn Debrouwere <stijn@stdout.be> (http://stdout.be)",
   "description": "Railgun guides your client-side app from development to production. Bundles and optimizes your assets. Separates dev and production environment.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": {
     "type": "git",
     "url": "git://github.com/stdbrouw/railgun.git"
