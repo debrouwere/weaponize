@@ -70,9 +70,10 @@ getScripts = (window, root) ->
             # strip out querystring, if any, and turn
             # into an absolute path
             src = normalize src
-            path = absolutize src, root
+            # path = absolutize src, root
             type = ($ @).attr 'type'
-            {src, type}
+            precompile = ($ @).data 'precompile'
+            {src, type, precompile}
         .get()
         .filter (script) ->
             script.src isnt utils.jQueryPath
@@ -86,7 +87,7 @@ getStyles = (window, root) ->
         .map ->
             src = ($ @).attr 'href'
             src = normalize src
-            path = absolutize src, root
+            # path = absolutize src, root
             type = ($ @).attr 'type'
             {src, type}
         .get()
@@ -148,8 +149,8 @@ class exports.Bundle
             $ = window.$
             scripts = getScripts window, @root
             scripts.forEach (script) =>
-                if ($ script).data 'precompile'
-                    s = @find '/' + normalize script.src
+                if script.precompile
+                    s = @find '/' + script.src
                     s.compilerType = 'precompiler'                   
 
             callback()
