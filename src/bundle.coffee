@@ -148,9 +148,9 @@ class exports.Bundle
             $ = window.$
             scripts = getScripts window, @root
             scripts.forEach (script) =>
-                if script.type and tilt.getHandlerByMime script.type
-                    s = @find '/' + script.src
-                    s.compilerType = 'precompiler'
+                if ($ script).data 'precompile'
+                    s = @find '/' + normalize script.src
+                    s.compilerType = 'precompiler'                   
 
             callback()
 
