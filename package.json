@@ -1,16 +1,16 @@
 {
-  "name": "railgun",
+  "name": "weaponize",
   "author": "Stijn Debrouwere <stijn@stdout.be> (http://stdout.be)",
-  "description": "Railgun guides your client-side app from development to production. Bundles and optimizes your assets. Separates dev and production environment.",
+  "description": "Weaponize guides your client-side app from development to production. Bundles and optimizes your assets. Separates dev and production environment.",
   "version": "0.1.2",
   "repository": {
     "type": "git",
-    "url": "git://github.com/stdbrouw/railgun.git"
+    "url": "git://github.com/stdbrouw/weaponize.git"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "http://github.com/stdbrouw/railgun/raw/master/LICENSE"
+      "url": "http://github.com/stdbrouw/weaponize/raw/master/LICENSE"
     }
   ],
   "dependencies": {
@@ -20,9 +20,9 @@
     "mime": "1.x",
     "tilt": "0.1.x",
     "envv": "0.x",
-    "jsdom": "0.2.x",
+    "cheerio": "0.10.x",
     "uglify-js": "1.x",
-    "async": "0.1.x",
+    "async": ">0.2.6",
     "findit": "0.1.x",
     "wrench": "1.x"
   },
@@ -38,5 +38,8 @@
   "scripts": {
     "install": "make"
   },
-  "bin": "./bin/railgun"
+  "bin": "./bin/weaponize",
+  "scripts": {
+    "test": "mocha --compilers coffee:coffee-script --reporter list"
+  }
 }

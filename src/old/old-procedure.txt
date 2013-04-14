@@ -1,0 +1,36 @@
+1. create an unoptimized bundle (walk the file tree and put paths in a hash, with path and origpath keys)
+2. figure out which templates need precompilation vs. compilation and add that metadata to the bundle
+   (precompilation if referenced in a file with a text/mytemplateengine type)
+   (breadth-first, template by template, because files other than the index
+   can also reference templates to be precompiled)
+   (So it makes sense to put templates that need only precompilation inside of a `templates` dir
+   so as not to confuse Railgun. As always, if Railgun is confused or is encountering compilation
+   errors by trying to compile templates without the necessary context, it should spit out useful errors
+   or tell people about the compilation error and ask "Did you want to precompile this file instead? Y/n")
+   (The docs should communicate that this is a bit of a chicken-and-egg thing: we need to compile
+   templates to know whether they refer to other templates that need to only be *pre*compiled, so
+   it's a bit of a guessing game unless you properly structure your app.)
+   [TODO: see how Jade precompiles extends/includes blocks to see if those need any special treatment]
+3. run envv on HTML files to remove any dev environment stuff
+4. find link and script references in every file, annotate the bundle
+5. find the optimal order for javascript and stylesheets, complain if we can't (because e.g. in one file
+   you load jQuery before a.js and in another file you load a.js before jQuery)
+6. concatenate and optimize, add the concatenated file to the bundle, remove references to the original files
+   with a reference to 'application.min.js'
+
+Provide a nice little report of what we compiled, what we precompiled and what we concatenated, warnings
+(if there are warnings), reduction in filesize, reduction in amount of files, reduction in amount of
+requests for the entrypoint et cetera
+
+Serving or writing away this bundle is not a part of this code, but is taken care of elsewhere in Railgun.
+
+---
+
+# preprocess files one by one
+# - skipping them if they've already been compiled (operations.length > 0)
+# - precompiling or compiling depending on file.compilationType, and adding the compiled result to file.content
+# - changing `path` with the preferred new extension
+# - annotate file.operations
+# - for HTML, read through the file for script references, and then annotate
+#   those referenced files as files that need precompilation instead of compilation
+#   (if the type indicates precompilation instead of compilation, e.g. text/jade)

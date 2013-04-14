@@ -1,3 +1,5 @@
+** cache busters (md5 for application.min.js and application.min.css)
+
 ** instead of using an application.min.js and application.min.css, allow the option to inline everything on the page 
 
 not a good idea for sites, a very good idea for single-page apps

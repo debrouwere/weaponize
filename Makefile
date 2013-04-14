@@ -6,4 +6,4 @@ clean:
 	rm -rf cache
 
 test: all
-	./node_modules/.bin/mocha --reporter list
+	./node_modules/.bin/mocha --compilers coffee:coffee-script
