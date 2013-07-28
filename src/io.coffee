@@ -2,6 +2,7 @@ fs = require 'fs'
 fs.path = require 'path'
 findit = require 'findit'
 wrench = require 'wrench'
+crush = require './crush'
 
 ###
 Directory and Buffer serve to make it easy to generate a bundle from either 
@@ -54,14 +55,12 @@ class exports.Directory extends exports.IO
             src.pipe dest
             dest.on 'end', callback
 
-normalize = (fn) ->
-    # we can work with weaponize.File instances
-    # but also with (path, content) pairs
-    (file...) ->
-        if file[0] instanceof crush.File
-            fn file[0]
-        else
-            fn new crush.File file...
+normalize = (file...) ->
+    #console.log file
+    if file[0] instanceof crush.File
+        file[0]
+    else
+        new crush.File file...
 
 class exports.Buffer extends exports.IO
     constructor: ->
@@ -80,12 +79,14 @@ class exports.Buffer extends exports.IO
 
     # creation
     # TODO: normalize
-    add: (file) ->
+    add: (file...) ->
+        file = normalize file...
+        # console.log 'adding file ', file.path, file.content
         @files.push file
 
     # for consistency with io.Directory
-    write: (file, callback) ->
-        @add file
+    write: (file..., callback) ->
+        @add file...
         callback null
     
     close: ->

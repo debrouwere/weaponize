@@ -78,6 +78,12 @@ class exports.File
           is specified (e.g. from Handlebars templates to JavaScript
           template functions)
         ###
+
+        # perhaps a bit hackish?
+        if @content? and typeof @content is 'object'
+            @source = @content.source
+            @content = undefined
+
         @mime = mime.lookup @path
         @charset = mime.charsets.lookup @mime
         @isBuffer = @content instanceof Buffer
@@ -93,6 +99,8 @@ class exports.File
         file = new tilt.File path: @path
         @handler = tilt.findHandler file
         if @handler
+            @isBinary = no
+            @charset = 'UTF-8'
             @type = utils.filetype @handler.mime.output
         else
             @type = utils.filetype @mime
@@ -125,14 +133,18 @@ class exports.File
 
     # TODO: update metadata (path, size)
     load: (callback) ->
+        # use file path unless a different 
+        # source is specified
+        path = @source or @path
+
         if @content?
             callback null
         else if @isBinary
-            fs.readFile @path, (err, @content) =>
+            fs.readFile path, (err, @content) =>
                 @isBuffer = yes
                 callback err
         else
-            fs.readFile @path, @charset, (err, @content) =>
+            fs.readFile path, @charset, (err, @content) =>
                 callback err
 
     stat: (callback) ->
@@ -155,8 +167,8 @@ class exports.File
     preprocess: (callback) ->
         if @handler?
             input = new tilt.File
-                    path: @path
-                    content: @content
+                path: @path
+                content: @content
 
             @handler[@compilerType] input, {}, (@content) =>
                 callback null
@@ -215,11 +227,11 @@ class exports.File
 
     # TODO: optimize HTML, CSS, JS
     optimize: (callback) ->
-
+        return callback null, this
 
     # REFACTOR: this is old code and won't work as-is
     gzip: (callback) ->
-        return (callback null, this) unless @bundle.options.compress
+        return (callback null, this) #unless @bundle.options.compress
 
         gzip = (file, done) ->
             return done() unless fs.path.extname(file.path) in ['.html', '.js', '.css']

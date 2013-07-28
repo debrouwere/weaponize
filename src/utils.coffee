@@ -9,6 +9,7 @@ filetypes = [
     ['javascript', 'script']
     ['html', 'html']
     ['plain', 'plain']
+    ['xml', 'plain']
     ]
 
 exports.filetype = (mime) ->

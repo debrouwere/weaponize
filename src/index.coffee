@@ -11,7 +11,7 @@ _.extend exports, require './crush'
 _.extend exports, require './bundle'
 
 # `package` writes the bundle away to a directory
-exports.package = (source, destination, callback = ->) ->
+exports.package = (source, destination, callback=->) ->
     bundle = new exports.Bundle()
 
     if typeof destination is 'string'
@@ -37,6 +37,9 @@ exports.package = (source, destination, callback = ->) ->
     else
         throw new Error """`source` should be a Buffer, Directory, 
             (path, content) tuples or a path:content hash map."""
+
+    for file in bundle.source.files
+        file.destination = destination
 
     bundle.generate callback
 

@@ -65,24 +65,29 @@ class exports.Bundle
     processFiles: (callback) ->
         # see worker.coffee for potential clustering options
 
-        ###
-        Will probably have to replace this with a proper async.cargo
-        because I think what's happening is that async.until is
-        getting all the attention and the work is not.
-
-        q.drain ->
-            if loaded then callback null
-        ###
+        console.log 'PROCESSING FILES'
 
         loaded = no
         process = (file, done) -> file.process done
 
         cargo = async.cargo (files, done) -> 
             async.each files, process, done
-        cargo.drain = -> if loaded then callback null
+        
+        ###
+        cargo.drain = ->
+            process.nextTick ->
+                console.log 'WEAPONIZE: CALLING BACK HOME'
+                if loaded then callback null
+        ###
+        
+        cargo.empty = ->
+            console.log 'CARGO EMPTY'
+            if loaded then return callback null
 
         @source.each (file) -> cargo.push file
-        @source.end -> loaded = yes
+        @source.end ->
+            console.log 'loaded!'
+            loaded = yes
 
     generate: (callback, @verbose = no) ->
         @processEntryPoints =>
