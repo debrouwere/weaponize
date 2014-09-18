@@ -4,7 +4,7 @@ Weaponize guides your client-side app from development to production. Bundles an
 
 ## Project status
 
-Weaponize is highly experimental, alpha, under heavy development, however you'd like to call it. Please don't use this... yet.
+Weaponize is **no longer actively maintained**. It was an experiment to try and create a client-side app builder/optimizer with sensible-enough defaults that you wouldn't need [Grunt](http://gruntjs.com/) or [Gulp](http://gulpjs.com/). But everyone does things slightly differently and people are – rightfully – quite picky about what their build process looks like, so that kind of sort of turned out to be a fool's errand. Oh well!
 
 ## SOME NOTES
 
